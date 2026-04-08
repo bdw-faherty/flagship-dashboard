@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Store View — Faherty Brand</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.5/babel.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body,#root{min-height:100vh;background:#0B0E11}
+    body{font-family:'Space Grotesk',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;color:#E6EDF3}
+    ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#30363D;border-radius:3px}
+    button{font-family:inherit;cursor:pointer}table{border-spacing:0}
+    .sc{transition:border-color .2s,background .2s,transform .15s}.sc:hover{border-color:#58A6FF!important;background:#1C222B!important;transform:translateY(-2px)}
+    .pr:hover{background:#1A1F2688}.pill:hover{background:#21262D!important}
+    .nb{transition:all .15s}.nb:hover{background:#58A6FF14!important;color:#58A6FF!important}
+    @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}.fu{animation:fu .4s ease-out both}
+    @keyframes pu{0%,100%{opacity:1}50%{opacity:.5}}.pu{animation:pu 2s ease-in-out infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-type="module">
+const{useState,useMemo,useEffect,Fragment:F}=React;
+
+// ═══ CONFIGURATION ═══
+// For GitHub Pages: data.json sits next to index.html
+// For Box integration: change this to your Box shared link
+const DATA_URL = "data.json";
+
+// ═══ COLORS ═══
+const C={bg:"#0B0E11",srf:"#12161B",card:"#161B22",brd:"#21262D",brl:"#30363D",txt:"#E6EDF3",tm:"#8B949E",td:"#6E7681",ac:"#58A6FF",acd:"#1F6FEB",g:"#3FB950",y:"#D29922",r:"#F85149",o:"#DB6D28",p:"#BC8CFF"};
+
+// ═══ DATA LOADER ═══
+function useData(){
+  const[data,setData]=useState(null);
+  const[loading,setLoading]=useState(true);
+  const[error,setError]=useState(null);
+  useEffect(()=>{
+    fetch(DATA_URL).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()})
+    .then(d=>{setData(d);setLoading(false)})
+    .catch(e=>{setError(e.message);setLoading(false)});
+  },[]);
+  return{data,loading,error};
+}
+
+// ═══ HELPERS ═══
+const fmt=n=>n==null?'—':typeof n==='number'?n.toLocaleString():n;
+const fmtD=n=>n==null?'—':'$'+Math.round(n).toLocaleString();
+const pct=(a,b)=>b?((a/b-1)*100).toFixed(1):null;
+const DIVS=["All","Mens","Womens","Accessories","Footwear","Kids","Non Apparel"];
+const PLS=["All","Full Price","Markdown"];
+const TFS=["LCW","L4W","L8W","L12W","STD"];
+
+// ═══ UI ATOMS ═══
+function Pill({children,active,onClick,small,color}){
+  return <button className="pill" onClick={onClick} style={{padding:small?"3px 10px":"5px 14px",borderRadius:6,border:`1px solid ${active?(color||C.ac):C.brd}`,background:active?(color||C.acd)+"22":"transparent",color:active?(color||C.ac):C.tm,fontSize:small?11:12,fontWeight:500,transition:"all .15s",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".02em"}}>{children}</button>;
+}
+
+function MC({label,value,sub,trend,small}){
+  return <div style={{background:C.card,border:`1px solid ${C.brd}`,borderRadius:10,padding:small?"14px 16px":"20px 22px",flex:1,minWidth:small?140:180}}>
+    <div style={{fontSize:11,color:C.td,textTransform:"uppercase",letterSpacing:".08em",fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>{label}</div>
+    <div style={{fontSize:small?22:28,fontWeight:700,color:C.txt,fontFamily:"'Space Grotesk',sans-serif",lineHeight:1.1}}>{value}</div>
+    {sub&&<div style={{fontSize:11,color:C.tm,marginTop:6}}>{sub}</div>}
+    {trend!=null&&trend!==undefined&&<div style={{fontSize:11,marginTop:6,color:parseFloat(trend)>=0?C.g:C.r,fontFamily:"'JetBrains Mono',monospace"}}>{parseFloat(trend)>=0?"▲":"▼"} {Math.abs(parseFloat(trend))}% vs LY</div>}
+  </div>;
+}
+
+function HB({score}){const c=score==="Healthy"?C.g:score==="At Risk"?C.y:C.r;return <span style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:5,background:c+"18",color:c,fontSize:11,fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}><span style={{width:6,height:6,borderRadius:"50%",background:c,display:"inline-block"}}/>{score}</span>;}
+
+function AB({action}){const m={"Fulfill":{b:C.g+"20",c:C.g,i:"✓"},"Partial":{b:C.y+"20",c:C.y,i:"◐"},"None Avail":{b:C.r+"18",c:C.r,i:"✕"},"Stocked":{b:C.td+"18",c:C.td,i:"—"}};const s=m[action]||m.Stocked;return <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"2px 8px",borderRadius:4,background:s.b,color:s.c,fontSize:10,fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>{s.i} {action}</span>;}
+
+const th={textAlign:"left",padding:"8px 10px",color:C.td,fontWeight:500,fontSize:10,textTransform:"uppercase",letterSpacing:".06em"};
+const td={padding:"7px 10px",color:C.tm};
+
+function FilterBar({div,setDiv,pl,setPl,tf,setTf,showTf}){
+  return <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:20}}>
+    <span style={{fontSize:10,color:C.td,textTransform:"uppercase",letterSpacing:".1em",fontFamily:"'JetBrains Mono',monospace",marginRight:4}}>Division</span>
+    {DIVS.map(d=><Pill key={d} active={div===d} onClick={()=>setDiv(d)} small>{d}</Pill>)}
+    <span style={{width:1,height:20,background:C.brd,margin:"0 8px"}}/>
+    <span style={{fontSize:10,color:C.td,textTransform:"uppercase",letterSpacing:".1em",fontFamily:"'JetBrains Mono',monospace",marginRight:4}}>Pricing</span>
+    {PLS.map(p=><Pill key={p} active={pl===p} onClick={()=>setPl(p)} small>{p}</Pill>)}
+    {showTf&&<F><span style={{width:1,height:20,background:C.brd,margin:"0 8px"}}/>
+    <span style={{fontSize:10,color:C.td,textTransform:"uppercase",letterSpacing:".1em",fontFamily:"'JetBrains Mono',monospace",marginRight:4}}>Period</span>
+    {TFS.map(t=><Pill key={t} active={tf===t} onClick={()=>setTf(t)} small color={C.p}>{t}</Pill>)}</F>}
+  </div>;
+}
+
+// ═══ SIZE GRID ═══
+function SizeGrid({sizes,tf}){
+  // sizes: {sz: [oh, tr, plg, u_std, u_l4w, u_lcw]}
+  const entries=Object.entries(sizes).sort((a,b)=>(b[1][3]||0)-(a[1][3]||0));
+  if(!entries.length) return null;
+  const wkDiv=tf==="LCW"?1:tf==="L4W"?4:tf==="L8W"?8:tf==="L12W"?12:13;
+  return <div style={{overflowX:"auto",marginTop:12}}>
+    <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>
+      <thead><tr style={{borderBottom:`1px solid ${C.brd}`}}>
+        <th style={th}>Size</th><th style={th}>OH</th><th style={th}>Transit</th><th style={th}>Total</th>
+        <th style={th}>Sales ({tf})</th><th style={th}>Wk Rate</th><th style={th}>8W Need</th>
+        <th style={th}>Gap</th><th style={th}>PLG Avail</th><th style={th}>Can Fill</th><th style={th}>Action</th>
+      </tr></thead>
+      <tbody>{entries.map(([sz,d])=>{
+        const[oh,tr,plg,u_std,u_l4w,u_lcw]=d;
+        const tfU=tf==="LCW"?u_lcw:tf==="L4W"?u_l4w:u_std;
+        const wkR=tfU/wkDiv;
+        const need=Math.round(wkR*8);
+        const avail=oh+tr;
+        const gap=Math.max(0,need-avail);
+        const fill=Math.min(gap,plg);
+        const action=gap===0?"Stocked":fill>=gap?"Fulfill":fill>0?"Partial":"None Avail";
+        return <tr key={sz} style={{borderBottom:`1px solid ${C.brd}22`}}>
+          <td style={td}><strong>{sz}</strong></td>
+          <td style={td}>{oh}</td><td style={td}>{tr}</td><td style={td}>{oh+tr}</td>
+          <td style={td}>{Math.round(tfU)}</td>
+          <td style={td}>{wkR.toFixed(1)}/wk</td>
+          <td style={td}>{need}</td>
+          <td style={{...td,color:gap>0?C.r:C.tm}}>{gap}</td>
+          <td style={td}>{plg}</td>
+          <td style={{...td,color:fill>0?C.g:C.td}}>{fill}</td>
+          <td style={td}><AB action={action}/></td>
+        </tr>;
+      })}</tbody>
+    </table>
+  </div>;
+}
+
+// ═══ HOME DASHBOARD ═══
+function Home({store,data}){
+  const[div,setDiv]=useState("All");
+  const[pl,setPl]=useState("All");
+  const agg=data.sa[store.n];
+  if(!agg) return <div style={{color:C.tm}}>No inventory data for {store.n}</div>;
+
+  // Compute filtered metrics
+  const getMetrics=()=>{
+    if(div==="All"&&pl==="All") return {oh:agg.oh,tr:agg.tr,'oh$':agg['oh$'],cost:agg.cost,oh_ly:agg.oh_ly};
+    if(div!=="All"&&pl==="All"){const d=agg.divs[div]||[0,0,0];return{oh:d[0],tr:d[1],'oh$':d[2]};}
+    if(pl!=="All"&&div==="All"){const p=agg.pls[pl]||[0,0,0];return{oh:p[0],tr:p[1],'oh$':p[2]};}
+    return{oh:'—',tr:'—','oh$':'—'};
+  };
+  const m=getMetrics();
+  const wos=m.oh&&agg.oh?(m.oh/((agg.oh||1)/13)).toFixed(1):null;
+  const lyTrend=agg.oh_ly?pct(agg.oh,agg.oh_ly):null;
+
+  // Sales aggregates from programs
+  const progs=Object.values(data.pr[store.n]||{});
+  const totalSalesSTD=progs.reduce((s,p)=>{
+    if(div!=="All"&&p.i[2]!==div) return s;
+    if(pl!=="All"&&p.i[5]!==pl) return s;
+    return s+(p.t.STD?.[0]||0);
+  },0);
+  const totalSalesLY=progs.reduce((s,p)=>{
+    if(div!=="All"&&p.i[2]!==div) return s;
+    if(pl!=="All"&&p.i[5]!==pl) return s;
+    return s+(p.t.STD?.[2]||0);
+  },0);
+  const totalSalesLCW=progs.reduce((s,p)=>{
+    if(div!=="All"&&p.i[2]!==div) return s;
+    if(pl!=="All"&&p.i[5]!==pl) return s;
+    return s+(p.t.LCW?.[0]||0);
+  },0);
+  const avgWkSales=Math.round(totalSalesSTD/13);
+
+  return <div>
+    <h2 style={{fontSize:22,fontWeight:700,color:C.txt,fontFamily:"'Space Grotesk',sans-serif",margin:"0 0 4px"}}>Inventory Overview</h2>
+    <p style={{color:C.tm,fontSize:13,margin:"0 0 24px"}}>Live inventory for {store.n} · {store.a}</p>
+    <FilterBar div={div} setDiv={setDiv} pl={pl} setPl={setPl}/>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:16}}>
+      <MC label="On Hand" value={fmt(m.oh)} sub="units in store" trend={div==="All"&&pl==="All"?lyTrend:undefined}/>
+      <MC label="In Transit" value={fmt(m.tr)} sub="units incoming"/>
+      <MC label="Total Inventory" value={fmt((m.oh||0)+(m.tr||0))} sub="OH + transit"/>
+      <MC label="OH Retail Value" value={fmtD(m['oh$'])}/>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:16}}>
+      <MC label="STD Sales (13W)" value={fmt(Math.round(totalSalesSTD))} sub="units" trend={totalSalesLY?pct(totalSalesSTD,totalSalesLY):undefined} small/>
+      <MC label="Avg Weekly Sales" value={fmt(avgWkSales)} sub="units/week" small/>
+      <MC label="LCW Sales" value={fmt(Math.round(totalSalesLCW))} sub="units last week" small/>
+      {m.cost?<MC label="OH at Cost" value={fmtD(m.cost)} small/>:null}
+    </div>
+    {div==="All"&&pl==="All"&&<F>
+      <h3 style={{fontSize:14,fontWeight:600,color:C.tm,margin:"24px 0 12px",fontFamily:"'JetBrains Mono',monospace"}}>By Division</h3>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+        {Object.entries(agg.divs).filter(([k])=>!["MISC","Please Review"].includes(k)).sort((a,b)=>b[1][0]-a[1][0]).map(([k,v])=>
+          <div key={k} style={{background:C.card,border:`1px solid ${C.brd}`,borderRadius:8,padding:"12px 16px"}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.txt,marginBottom:6}}>{k}</div>
+            <div style={{fontSize:11,color:C.tm,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(v[0])} OH · {fmt(v[1])} transit · {fmtD(v[2])}</div>
+          </div>
+        )}
+      </div>
+    </F>}
+  </div>;
+}
+
+// ═══ TOP PROGRAMS ═══
+function Programs({store,data}){
+  const[div,setDiv]=useState("All");
+  const[pl,setPl]=useState("All");
+  const[tf,setTf]=useState("L4W");
+  const[expId,setExpId]=useState(null);
+
+  const progs=useMemo(()=>{
+    const raw=Object.entries(data.pr[store.n]||{});
+    return raw.map(([sku,p])=>{
+      const tfD=p.t[tf]||[0,0,0,0,0,0];
+      const oh=p.oh||0,tr=p.tr||0,avail=oh+tr;
+      const wkDiv=tf==="LCW"?1:tf==="L4W"?4:tf==="L8W"?8:tf==="L12W"?12:13;
+      const wkRate=tfD[0]/wkDiv;
+      const need8w=Math.round(wkRate*8);
+      const gap=Math.max(0,need8w-avail);
+      const health=avail>=need8w?"Healthy":avail>=need8w*0.6?"At Risk":"Critical";
+      const hasActionable=Object.values(p.sz||{}).some(sd=>{
+        const wR=(tf==="LCW"?sd[5]:tf==="L4W"?sd[4]:sd[3])/wkDiv;
+        const nd=Math.round(wR*8),av=sd[0]+sd[1],g=Math.max(0,nd-av);
+        return g>0&&sd[2]>0;
+      });
+      return{sku,name:p.i[0],color:p.i[1],div:p.i[2],cat:p.i[3],pl:p.i[5],
+        units:tfD[0],sales$:tfD[1],unitsLY:tfD[2],salesLY$:tfD[3],fpU:tfD[4],fpS$:tfD[5],
+        oh,tr,avail,wkRate,need8w,gap,health,hasActionable,sizes:p.sz||{},tfD};
+    }).filter(p=>{
+      if(div!=="All"&&p.div!==div) return false;
+      if(pl!=="All"&&p.pl!==pl) return false;
+      return p.units>0||p.oh>0;
+    }).sort((a,b)=>b.units-a.units);
+  },[data,store,div,pl,tf]);
+
+  return <div>
+    <h2 style={{fontSize:22,fontWeight:700,color:C.txt,fontFamily:"'Space Grotesk',sans-serif",margin:"0 0 4px"}}>Top Programs</h2>
+    <p style={{color:C.tm,fontSize:13,margin:"0 0 24px"}}>Ranked by {tf} sales — click any row for size-level detail & PLG check</p>
+    <FilterBar div={div} setDiv={setDiv} pl={pl} setPl={setPl} tf={tf} setTf={setTf} showTf/>
+    <div style={{fontSize:11,color:C.td,marginBottom:12,fontFamily:"'JetBrains Mono',monospace"}}>{progs.length} programs</div>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {progs.slice(0,50).map((p,idx)=>{
+        const exp=expId===p.sku;
+        const lyTrend=p.unitsLY?pct(p.units,p.unitsLY):null;
+        return <div key={p.sku} style={{background:C.card,border:`1px solid ${exp?C.acd:C.brd}`,borderRadius:10,overflow:"hidden",transition:"border-color .2s"}}>
+          <div className="pr" onClick={()=>setExpId(exp?null:p.sku)} style={{padding:"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",borderRadius:10}}>
+            <span style={{fontSize:13,fontWeight:700,color:C.td,fontFamily:"'JetBrains Mono',monospace",minWidth:28}}>#{idx+1}</span>
+            <div style={{flex:1,minWidth:160}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.txt,fontFamily:"'Space Grotesk',sans-serif"}}>{p.name}</div>
+              <div style={{fontSize:10,color:C.td,marginTop:2,fontFamily:"'JetBrains Mono',monospace"}}>{p.color} · {p.div} · {p.cat} · {p.pl}</div>
+            </div>
+            <div style={{textAlign:"right",minWidth:70}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.txt,fontFamily:"'Space Grotesk',sans-serif"}}>{Math.round(p.units)}</div>
+              <div style={{fontSize:9,color:C.td,fontFamily:"'JetBrains Mono',monospace"}}>units ({tf})</div>
+            </div>
+            {lyTrend!=null&&<span style={{fontSize:10,color:parseFloat(lyTrend)>=0?C.g:C.r,fontFamily:"'JetBrains Mono',monospace"}}>{parseFloat(lyTrend)>=0?"▲":"▼"}{Math.abs(parseFloat(lyTrend))}%</span>}
+            <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{textAlign:"center"}}><div style={{fontSize:11,fontWeight:600,color:C.tm}}>{p.oh}</div><div style={{fontSize:8,color:C.td}}>OH</div></div>
+              <div style={{textAlign:"center"}}><div style={{fontSize:11,fontWeight:600,color:C.tm}}>{p.tr}</div><div style={{fontSize:8,color:C.td}}>Transit</div></div>
+              <div style={{textAlign:"center"}}><div style={{fontSize:11,fontWeight:600,color:p.gap>0?C.r:C.g}}>{p.gap}</div><div style={{fontSize:8,color:C.td}}>Gap</div></div>
+            </div>
+            <HB score={p.health}/>
+            {p.hasActionable&&<span style={{padding:"3px 8px",borderRadius:4,background:C.ac+"18",color:C.ac,fontSize:10,fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>★ ACTION</span>}
+            <span style={{fontSize:13,color:C.td,transform:exp?"rotate(180deg)":"none",transition:"transform .2s",display:"inline-block"}}>▾</span>
+          </div>
+          {exp&&<div style={{padding:"0 18px 18px",borderTop:`1px solid ${C.brd}`}}>
+            <div style={{display:"flex",gap:20,padding:"14px 0 8px",flexWrap:"wrap"}}>
+              <div><span style={{fontSize:10,color:C.td}}>Wk Rate ({tf})</span><div style={{fontSize:13,fontWeight:600,color:C.txt}}>{p.wkRate.toFixed(1)} u/wk</div></div>
+              <div><span style={{fontSize:10,color:C.td}}>8W Need</span><div style={{fontSize:13,fontWeight:600,color:C.txt}}>{p.need8w} units</div></div>
+              <div><span style={{fontSize:10,color:C.td}}>Available</span><div style={{fontSize:13,fontWeight:600,color:C.txt}}>{p.avail} units</div></div>
+              <div><span style={{fontSize:10,color:C.td}}>Gap</span><div style={{fontSize:13,fontWeight:600,color:p.gap>0?C.r:C.g}}>{p.gap>0?`-${p.gap}`:"Covered"}</div></div>
+              <div><span style={{fontSize:10,color:C.td}}>{tf} Sales $</span><div style={{fontSize:13,fontWeight:600,color:C.txt}}>{fmtD(p.sales$)}</div></div>
+              {p.salesLY$?<div><span style={{fontSize:10,color:C.td}}>{tf} LY $</span><div style={{fontSize:13,fontWeight:600,color:C.tm}}>{fmtD(p.salesLY$)}</div></div>:null}
+            </div>
+            <div style={{fontSize:10,color:C.td,margin:"8px 0 4px",fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:".08em"}}>Size-Level Breakdown & PLG Availability</div>
+            <SizeGrid sizes={p.sizes} tf={tf}/>
+          </div>}
+        </div>;
+      })}
+    </div>
+  </div>;
+}
+
+// ═══ OPPORTUNITIES ═══
+function Opps({store,data}){
+  const[div,setDiv]=useState("All");
+  const[pl,setPl]=useState("All");
+  const[expId,setExpId]=useState(null);
+
+  // Find SKUs that sell well chain-wide but this store has 0 OH and 0 sales
+  const opps=useMemo(()=>{
+    const storeProgs=new Set(Object.keys(data.pr[store.n]||{}));
+    const storeInvSkus=new Set();
+    // Also check if store has inventory
+    const sa=data.sa[store.n];
+
+    // Aggregate chain-wide sales for SKUs this store doesn't carry
+    const chainSales={}; // sku -> {total_units, store_count, info, sizes}
+    for(const[sn,progs] of Object.entries(data.pr)){
+      if(sn===store.n) continue;
+      for(const[sku,p] of Object.entries(progs)){
+        if(!chainSales[sku]) chainSales[sku]={u:0,cnt:0,i:p.i,sz:{}};
+        const cs=chainSales[sku];
+        cs.u+=(p.t.L4W?.[0]||0);
+        cs.cnt++;
+        for(const[sz,sd] of Object.entries(p.sz||{})){
+          if(!cs.sz[sz]) cs.sz[sz]=[0,0]; // [total_sales, plg]
+          cs.sz[sz][0]+=(sd[4]||0); // l4w sales across chain
+          cs.sz[sz][1]=sd[2]; // plg (same for all stores)
+        }
+      }
+    }
+
+    return Object.entries(chainSales)
+      .filter(([sku])=>!storeProgs.has(sku))
+      .map(([sku,cs])=>{
+        const avgU=cs.cnt?cs.u/cs.cnt:0;
+        const recU=Math.round(avgU*1.1);
+        return{sku,name:cs.i[0],color:cs.i[1],div:cs.i[2],cat:cs.i[3],pl:cs.i[5],
+          chainAvg:Math.round(avgU),storeCount:cs.cnt,recUnits:recU,sizes:cs.sz,
+          priority:avgU>8?"High":avgU>4?"Medium":"Low"};
+      })
+      .filter(o=>{
+        if(div!=="All"&&o.div!==div) return false;
+        if(pl!=="All"&&o.pl!==pl) return false;
+        return o.chainAvg>2;
+      })
+      .sort((a,b)=>b.chainAvg-a.chainAvg);
+  },[data,store,div,pl]);
+
+  return <div>
+    <h2 style={{fontSize:22,fontWeight:700,color:C.txt,fontFamily:"'Space Grotesk',sans-serif",margin:"0 0 4px"}}>New Receipt Opportunities</h2>
+    <p style={{color:C.tm,fontSize:13,margin:"0 0 24px"}}>SKUs selling well across the chain that {store.n} doesn't currently carry</p>
+    <FilterBar div={div} setDiv={setDiv} pl={pl} setPl={setPl}/>
+    <div style={{fontSize:11,color:C.td,marginBottom:12,fontFamily:"'JetBrains Mono',monospace"}}>{opps.length} opportunities</div>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {opps.slice(0,40).map(o=>{
+        const exp=expId===o.sku;
+        const pc=o.priority==="High"?C.r:o.priority==="Medium"?C.y:C.tm;
+        return <div key={o.sku} style={{background:C.card,border:`1px solid ${exp?C.o+"66":C.brd}`,borderRadius:10,overflow:"hidden"}}>
+          <div className="pr" onClick={()=>setExpId(exp?null:o.sku)} style={{padding:"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",borderRadius:10}}>
+            <span style={{padding:"2px 8px",borderRadius:4,background:pc+"18",color:pc,fontSize:10,fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>{o.priority}</span>
+            <div style={{flex:1,minWidth:160}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.txt,fontFamily:"'Space Grotesk',sans-serif"}}>{o.name}</div>
+              <div style={{fontSize:10,color:C.td,marginTop:2,fontFamily:"'JetBrains Mono',monospace"}}>{o.color} · {o.div} · {o.pl}</div>
+            </div>
+            <div style={{display:"flex",gap:18,alignItems:"center"}}>
+              <div style={{textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:C.tm}}>{o.chainAvg}</div><div style={{fontSize:8,color:C.td}}>Peer Avg L4W</div></div>
+              <div style={{textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:C.tm}}>{o.storeCount}</div><div style={{fontSize:8,color:C.td}}>Stores Carry</div></div>
+              <div style={{textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:C.ac}}>{o.recUnits}</div><div style={{fontSize:8,color:C.td}}>Rec'd Units</div></div>
+            </div>
+            <span style={{fontSize:13,color:C.td,transform:exp?"rotate(180deg)":"none",transition:"transform .2s",display:"inline-block"}}>▾</span>
+          </div>
+          {exp&&<div style={{padding:"0 18px 18px",borderTop:`1px solid ${C.brd}`}}>
+            <div style={{padding:"12px 0 8px",fontSize:12,color:C.tm,lineHeight:1.6}}>
+              <strong style={{color:C.txt}}>{o.name}</strong> ({o.color}) sells an average of <strong style={{color:C.txt}}>{o.chainAvg} units L4W</strong> across {o.storeCount} stores. Recommend seeding <strong style={{color:C.ac}}>{o.recUnits} units</strong>.
+            </div>
+            <div style={{overflowX:"auto",marginTop:8}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>
+                <thead><tr style={{borderBottom:`1px solid ${C.brd}`}}>
+                  <th style={th}>Size</th><th style={th}>Chain L4W</th><th style={th}>PLG Avail</th><th style={th}>Action</th>
+                </tr></thead>
+                <tbody>{Object.entries(o.sizes).sort((a,b)=>b[1][0]-a[1][0]).map(([sz,sd])=>{
+                  const rec=Math.round(sd[0]/(o.storeCount||1)*1.1);
+                  const plgA=sd[1];
+                  const act=rec<=0?"—":plgA>=rec?"Fulfill":plgA>0?"Partial":"None Avail";
+                  return <tr key={sz} style={{borderBottom:`1px solid ${C.brd}22`}}>
+                    <td style={td}><strong>{sz}</strong></td>
+                    <td style={td}>{Math.round(sd[0]/(o.storeCount||1))}</td>
+                    <td style={td}>{plgA}</td>
+                    <td style={td}><AB action={act}/></td>
+                  </tr>;
+                })}</tbody>
+              </table>
+            </div>
+          </div>}
+        </div>;
+      })}
+    </div>
+  </div>;
+}
+
+// ═══ LAYOUT ═══
+const NAV=[{k:"home",l:"Dashboard",i:"◻"},{k:"programs",l:"Top Programs",i:"▤"},{k:"opps",l:"Opportunities",i:"◈"}];
+
+function StoreView({store,data,onBack}){
+  const[nav,setNav]=useState("home");
+  const[col,setCol]=useState(false);
+  return <div style={{display:"flex",minHeight:"100vh",background:C.bg}}>
+    <div style={{width:col?56:220,background:C.srf,borderRight:`1px solid ${C.brd}`,display:"flex",flexDirection:"column",transition:"width .25s",flexShrink:0,position:"sticky",top:0,height:"100vh",overflow:"hidden"}}>
+      <div style={{padding:col?"16px 8px":"20px 16px",borderBottom:`1px solid ${C.brd}`}}>
+        <button onClick={()=>setCol(!col)} style={{background:"none",border:"none",color:C.tm,fontSize:16,padding:4,display:"block",width:"100%",textAlign:col?"center":"left"}}>{col?"☰":"◁"}</button>
+        {!col&&<F><div style={{fontSize:15,fontWeight:700,color:C.txt,fontFamily:"'Space Grotesk',sans-serif",marginTop:12}}>{store.n}</div>
+        <div style={{fontSize:11,color:C.td,fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{store.a}</div></F>}
+      </div>
+      <div style={{padding:"12px 8px",flex:1}}>
+        {NAV.map(item=><button key={item.k} className="nb" onClick={()=>setNav(item.k)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:col?"10px 0":"10px 12px",justifyContent:col?"center":"flex-start",background:nav===item.k?C.ac+"14":"transparent",border:"none",borderRadius:8,color:nav===item.k?C.ac:C.tm,fontSize:13,fontWeight:nav===item.k?600:400,fontFamily:"'Space Grotesk',sans-serif",marginBottom:4}}>
+          <span style={{fontSize:16,width:20,textAlign:"center",flexShrink:0}}>{item.i}</span>{!col&&item.l}
+        </button>)}
+      </div>
+      <div style={{padding:"12px 8px",borderTop:`1px solid ${C.brd}`}}>
+        <button className="nb" onClick={onBack} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:col?"10px 0":"10px 12px",justifyContent:col?"center":"flex-start",background:"transparent",border:"none",borderRadius:8,color:C.td,fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>
+          <span style={{fontSize:14}}>←</span>{!col&&"All Stores"}
+        </button>
+      </div>
+    </div>
+    <div style={{flex:1,padding:"32px 36px",maxWidth:1200,overflowX:"hidden"}}>
+      {nav==="home"&&<Home store={store} data={data}/>}
+      {nav==="programs"&&<Programs store={store} data={data}/>}
+      {nav==="opps"&&<Opps store={store} data={data}/>}
+    </div>
+  </div>;
+}
+
+function Landing({stores,onSelect,dataDate}){
+  const[search,setSearch]=useState("");
+  const[area,setArea]=useState("All");
+  const areas=useMemo(()=>["All",...[...new Set(stores.map(s=>s.a))].sort()],[stores]);
+  const filtered=stores.filter(s=>{
+    if(area!=="All"&&s.a!==area) return false;
+    if(search&&!s.n.toLowerCase().includes(search.toLowerCase())&&!s.a.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+  return <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",padding:"40px 20px"}}>
+    <div className="fu" style={{textAlign:"center",maxWidth:720,marginBottom:36}}>
+      <div style={{fontSize:11,color:C.ac,fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",letterSpacing:".2em",marginBottom:16}}>Faherty Brand · Store Intelligence</div>
+      <h1 style={{fontSize:"clamp(32px,5vw,48px)",fontWeight:700,color:C.txt,fontFamily:"'Space Grotesk',sans-serif",margin:"0 0 12px",lineHeight:1.1}}>Store View</h1>
+      <p style={{fontSize:14,color:C.tm,lineHeight:1.7,maxWidth:480,margin:"0 auto"}}>
+        {stores.length} retail locations · Data as of {dataDate}
+      </p>
+    </div>
+    <div style={{width:"100%",maxWidth:900,marginBottom:20,display:"flex",gap:12,flexWrap:"wrap",alignItems:"center"}}>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search stores..." style={{flex:1,minWidth:200,padding:"10px 14px",background:C.card,border:`1px solid ${C.brd}`,borderRadius:8,color:C.txt,fontSize:13,fontFamily:"'JetBrains Mono',monospace",outline:"none"}}/>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {areas.map(a=><Pill key={a} active={area===a} onClick={()=>setArea(a)} small>{a==="All"?"All Regions":a}</Pill>)}
+      </div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:10,width:"100%",maxWidth:900}}>
+      {filtered.map((s,i)=><button key={s.n} className="sc fu" style={{background:C.card,border:`1px solid ${C.brd}`,borderRadius:10,padding:"18px 20px",textAlign:"left",position:"relative",overflow:"hidden",animationDelay:`${Math.min(i,8)*30}ms`}} onClick={()=>onSelect(s)}>
+        <div style={{fontSize:14,fontWeight:600,color:C.txt,fontFamily:"'Space Grotesk',sans-serif",marginBottom:4}}>{s.n}</div>
+        <div style={{fontSize:11,color:C.td,fontFamily:"'JetBrains Mono',monospace"}}>{s.a}</div>
+        <div style={{position:"absolute",right:16,bottom:14,fontSize:16,color:C.td}}>→</div>
+      </button>)}
+    </div>
+  </div>;
+}
+
+// ═══ STATUS BADGE ═══
+function Status({data}){
+  return <div style={{position:"fixed",top:16,right:16,zIndex:9999}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,background:C.srf,border:`1px solid ${C.brd}`,borderRadius:8,padding:"8px 14px",fontSize:11,color:C.tm,fontFamily:"'JetBrains Mono',monospace"}}>
+      <span style={{width:7,height:7,borderRadius:"50%",background:data?C.g:C.y,display:"inline-block"}}/>
+      {data?`Live · ${data.dt}`:"Loading..."}
+    </div>
+  </div>;
+}
+
+// ═══ APP ═══
+function App(){
+  const{data,loading,error}=useData();
+  const[store,setStore]=useState(null);
+
+  if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bg}}>
+    <div style={{textAlign:"center"}}><div className="spin" style={{width:32,height:32,border:`3px solid ${C.brd}`,borderTopColor:C.ac,borderRadius:"50%",margin:"0 auto 16px"}}/>
+    <div style={{color:C.tm,fontSize:13,fontFamily:"'JetBrains Mono',monospace"}}>Loading Faherty data...</div></div>
+  </div>;
+
+  if(error) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bg}}>
+    <div style={{textAlign:"center",maxWidth:400}}><div style={{fontSize:32,marginBottom:16}}>⚠</div>
+    <div style={{color:C.r,fontSize:14,marginBottom:8}}>Failed to load data</div>
+    <div style={{color:C.tm,fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>{error}</div>
+    <div style={{color:C.td,fontSize:11,marginTop:12}}>Make sure data.json is in the same folder as index.html</div></div>
+  </div>;
+
+  const stores=data.st;
+  return <F>
+    <Status data={data}/>
+    {store?<StoreView store={store} data={data} onBack={()=>setStore(null)}/>
+    :<Landing stores={stores} onSelect={setStore} dataDate={data.dt}/>}
+  </F>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
