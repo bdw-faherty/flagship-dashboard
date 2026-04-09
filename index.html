@@ -25,12 +25,19 @@
     @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite}
     .sort-btn{transition:all .15s}.sort-btn:hover{background:#E8DDD0!important}
     .sort-btn.active{background:#1B6B93!important;color:#fff!important;border-color:#1B6B93!important}
-    .sort-btn.disabled{opacity:.35;pointer-events:none}
   </style>
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-type="module">
+<script>
+// Global error handler to show errors visually
+window.onerror = function(msg, url, line, col, error) {
+  document.getElementById('root').innerHTML = '<div style="padding:40px;text-align:center;font-family:monospace"><h2 style="color:#C44536">Runtime Error</h2><p style="margin:12px 0;color:#5E7282">' + msg + '</p><p style="color:#8FA3B1">Line: ' + line + '</p></div>';
+  return false;
+};
+</script>
+<script type="text/babel">
+
 const{useState,useMemo,useEffect,Fragment:F}=React;
 const DATA_URL="data.json";
 
@@ -92,7 +99,7 @@ function TopBar({data}){
 function Pill({children,active,onClick,small,color,bold,disabled,style:sx}){
   const bg=active?(color==="coral"?C.coralL:color==="green"?C.gL:C.acl):"transparent";
   const fg=active?(color==="coral"?C.coral:color==="green"?C.g:C.ac):C.tm;
-  return <button className="pill" onClick={disabled?undefined:onClick} style={{padding:small?"4px 12px":"6px 16px",borderRadius:8,border:`1px solid ${active?(color==="coral"?C.coral+"44":color==="green"?C.g+"44":C.ac+"44"):C.brd}`,background:bg,color:fg,fontSize:small?11:12,fontWeight:active||bold?600:500,transition:"all .15s",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".01em",opacity:disabled?.35:1,cursor:disabled?"default":"pointer",...sx}}>{children}</button>;
+  return <button className="pill" onClick={disabled?undefined:onClick} style={{padding:small?"4px 12px":"6px 16px",borderRadius:8,border:`1px solid ${active?(color==="coral"?C.coral+"44":color==="green"?C.g+"44":C.ac+"44"):C.brd}`,background:bg,color:fg,fontSize:small?11:12,fontWeight:active||bold?600:500,transition:"all .15s",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".01em",opacity:disabled?0.35:1,cursor:disabled?"default":"pointer",...sx}}>{children}</button>;
 }
 
 function MC({label,value,sub,trend,small,children}){
@@ -224,7 +231,7 @@ function Landing({stores,stot,sa,onSelect,dataDate,data}){
   const metricLabel=metric==="sales_u"?"Sales Units":metric==="sales_d"?"Sales $":metric==="oh"?"Units OH":metric==="wos"?"WOS":"A–Z";
 
   const StoreCard=({s,isNso})=>{
-    const tfD=(s.t?.tf||{})[tf]||[0,0,0,0];
+    const tfD=((s.t||{}).tf||{})[tf]||[0,0,0,0];
     const lyT=s.lyVal?pct(s.val,s.lyVal):null;
     return <button className={`sc fu`} onClick={()=>onSelect(s)} style={{
       background:C.card,border:`1px solid ${isNso?C.y+"66":C.brd}`,borderRadius:14,padding:"18px 20px",textAlign:"left",
@@ -248,8 +255,8 @@ function Landing({stores,stot,sa,onSelect,dataDate,data}){
       {!isNso&&<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginTop:6}}>
         <div><div style={{fontSize:18,fontWeight:700,color:C.txt}}>{fmt(tfD[0])}</div><div style={{fontSize:9,color:C.td}}>Units {tf}</div></div>
         <div><div style={{fontSize:14,fontWeight:600,color:C.tm}}>{fmtK(tfD[1])}</div><div style={{fontSize:9,color:C.td}}>Sales $ {tf}</div></div>
-        <div><div style={{fontSize:14,fontWeight:600,color:C.tm}}>{fmt(s.a?.oh||0)}</div><div style={{fontSize:9,color:C.td}}>OH Units</div></div>
-        <div><div style={{fontSize:14,fontWeight:600,color:s.t?.wos>30?C.r:s.t?.wos>15?C.y:C.g}}>{s.t?.wos<100?s.t?.wos?.toFixed(1):"99+"}</div><div style={{fontSize:9,color:C.td}}>WOS</div></div>
+        <div><div style={{fontSize:14,fontWeight:600,color:C.tm}}>{fmt((s.a||{}).oh||0)}</div><div style={{fontSize:9,color:C.td}}>OH Units</div></div>
+        <div><div style={{fontSize:14,fontWeight:600,color:(s.t||{}).wos>30?C.r:(s.t||{}).wos>15?C.y:C.g}}>{(s.t||{}).wos<100?(s.t||{}).wo(s||{}).toFixed(1):"99+"}</div><div style={{fontSize:9,color:C.td}}>WOS</div></div>
       </div>}
       {!isNso&&lyT!=null&&<div style={{marginTop:8,fontSize:11,fontWeight:600,color:parseFloat(lyT)>=0?C.g:C.r,fontFamily:"'JetBrains Mono',monospace"}}>
         {parseFloat(lyT)>=0?"▲":"▼"} {Math.abs(parseFloat(lyT))}% vs LY ({metric==="sales_d"?fmtK(tfD[3]):fmt(tfD[2])})
@@ -309,14 +316,14 @@ function Landing({stores,stot,sa,onSelect,dataDate,data}){
 // ═══ HOME DASHBOARD ═══
 function Home({store,data}){
   const[div,setDiv]=useState("All");const[pl,setPl]=useState("All");
-  const agg=data.sa[store.n];const cats=data.cats?.[store.n]||{};const stot=data.stot?.[store.n]||{};
+  const agg=data.sa[store.n];const cats=(data.cats||{})[store.n]||{};const stot=(data.stot||{})[store.n]||{};
   if(!agg)return <div style={{color:C.tm}}>No data for {store.n}</div>;
   const m=(()=>{if(div==="All"&&pl==="All")return{oh:agg.oh,tr:agg.tr,'oh$':agg['oh$'],cost:agg.cost,oh_ly:agg.oh_ly};if(div!=="All"&&pl==="All"){const d=agg.divs[div]||[0,0,0];return{oh:d[0],tr:d[1],'oh$':d[2]};}if(pl!=="All"&&div==="All"){const p=agg.pls[pl]||[0,0,0];return{oh:p[0],tr:p[1],'oh$':p[2]};}return{oh:'—',tr:'—','oh$':'—'}})();
   const pieData=useMemo(()=>{if(div==="All")return Object.entries(agg.divs).filter(([k])=>!["MISC","Please Review"].includes(k)).map(([k,v])=>({label:k,value:v[0]})).filter(d=>d.value>0);const dc=cats[div]||{};return Object.entries(dc).map(([k,v])=>({label:k,value:v[0]})).filter(d=>d.value>0)},[div,agg,cats]);
   const progs=Object.values(data.pr[store.n]||{});
-  const tSTD=progs.reduce((s,p)=>{if(div!=="All"&&p.i[2]!==div)return s;if(pl!=="All"&&p.i[5]!==pl)return s;return s+(p.t.STD?.[0]||0)},0);
-  const tLY=progs.reduce((s,p)=>{if(div!=="All"&&p.i[2]!==div)return s;if(pl!=="All"&&p.i[5]!==pl)return s;return s+(p.t.STD?.[2]||0)},0);
-  const tLCW=progs.reduce((s,p)=>{if(div!=="All"&&p.i[2]!==div)return s;if(pl!=="All"&&p.i[5]!==pl)return s;return s+(p.t.LCW?.[0]||0)},0);
+  const tSTD=progs.reduce((s,p)=>{if(div!=="All"&&p.i[2]!==div)return s;if(pl!=="All"&&p.i[5]!==pl)return s;return s+((p.t.STD||[0])[0]||0)},0);
+  const tLY=progs.reduce((s,p)=>{if(div!=="All"&&p.i[2]!==div)return s;if(pl!=="All"&&p.i[5]!==pl)return s;return s+((p.t.STD||[0,0,0])[2]||0)},0);
+  const tLCW=progs.reduce((s,p)=>{if(div!=="All"&&p.i[2]!==div)return s;if(pl!=="All"&&p.i[5]!==pl)return s;return s+((p.t.LCW||[0])[0]||0)},0);
   const avgWk=Math.round(tSTD/13);const wos=avgWk>0?((m.oh||0)/avgWk).toFixed(1):'—';
 
   return <div><h2 style={{fontSize:22,fontWeight:700,color:C.txt,margin:"0 0 4px"}}>Inventory Overview</h2>
@@ -387,7 +394,7 @@ function Opps({store,data}){
     for(const p of Object.values(data.pr[store.n]||{}))storeStyles.add(p.i[0]);
     const locNames=data.loc_names||[];const chainSales={};
     for(const[sn,progs] of Object.entries(data.pr)){if(sn===store.n)continue;
-      for(const[sku,p] of Object.entries(progs)){if(p.i[5]!=="Full Price")continue;const sty=p.i[0];const isLoc=locNames.some(ln=>ln.length>3&&sty.toLowerCase().includes(ln.toLowerCase()));if(isLoc){if(!(store.n.length>3&&sty.toLowerCase().includes(store.n.toLowerCase())))continue}if(["MISC","Please Review","Non Apparel"].includes(p.i[2]))continue;if(!chainSales[sku])chainSales[sku]={u:0,cnt:0,i:p.i,sty};chainSales[sku].u+=(p.t.L4W?.[0]||0);chainSales[sku].cnt++}}
+      for(const[sku,p] of Object.entries(progs)){if(p.i[5]!=="Full Price")continue;const sty=p.i[0];const isLoc=locNames.some(ln=>ln.length>3&&sty.toLowerCase().includes(ln.toLowerCase()));if(isLoc){if(!(store.n.length>3&&sty.toLowerCase().includes(store.n.toLowerCase())))continue}if(["MISC","Please Review","Non Apparel"].includes(p.i[2]))continue;if(!chainSales[sku])chainSales[sku]={u:0,cnt:0,i:p.i,sty};chainSales[sku].u+=((p.t.L4W||[0])[0]||0);chainSales[sku].cnt++}}
     return Object.entries(chainSales).filter(([sku])=>!storeSkus.has(sku)).map(([sku,cs])=>{const avg=cs.cnt?cs.u/cs.cnt:0;const aff=storeStyles.has(cs.sty);const score=avg*(aff?1.5:1);return{sku,name:cs.i[0],color:cs.i[1],div:cs.i[2],cat:cs.i[3],pl:cs.i[5],chainAvg:Math.round(avg),storeCount:cs.cnt,recUnits:Math.round(avg*1.1),score,aff,priority:score>12?"High":score>6?"Medium":"Low"}}).filter(o=>{if(div!=="All"&&o.div!==div)return false;return o.chainAvg>=3}).sort((a,b)=>b.score-a.score);
   },[data,store,div]);
 
@@ -439,6 +446,7 @@ function App(){
   return <F><TopBar data={data}/>{store?<StoreView store={store} data={data} onBack={()=>setStore(null)}/>:<Landing stores={data.st} stot={data.stot||{}} sa={data.sa||{}} onSelect={setStore} dataDate={data.dt} data={data}/>}</F>;
 }
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+
 </script>
 </body>
 </html>
