@@ -30,10 +30,8 @@
 <body>
 <div id="root"></div>
 <script>
-// Global error handler to show errors visually
-window.onerror = function(msg, url, line, col, error) {
-  document.getElementById('root').innerHTML = '<div style="padding:40px;text-align:center;font-family:monospace"><h2 style="color:#C44536">Runtime Error</h2><p style="margin:12px 0;color:#5E7282">' + msg + '</p><p style="color:#8FA3B1">Line: ' + line + '</p></div>';
-  return false;
+window.onerror=function(msg,url,line,col,err){
+  document.getElementById('root').innerHTML='<div style="padding:40px;text-align:center;font-family:monospace"><h2 style="color:#C44536">Runtime Error</h2><p style="margin:12px 0;color:#5E7282">'+msg+'</p><p style="color:#8FA3B1">Line: '+line+'</p></div>';
 };
 </script>
 <script type="text/babel">
@@ -256,7 +254,7 @@ function Landing({stores,stot,sa,onSelect,dataDate,data}){
         <div><div style={{fontSize:18,fontWeight:700,color:C.txt}}>{fmt(tfD[0])}</div><div style={{fontSize:9,color:C.td}}>Units {tf}</div></div>
         <div><div style={{fontSize:14,fontWeight:600,color:C.tm}}>{fmtK(tfD[1])}</div><div style={{fontSize:9,color:C.td}}>Sales $ {tf}</div></div>
         <div><div style={{fontSize:14,fontWeight:600,color:C.tm}}>{fmt((s.a||{}).oh||0)}</div><div style={{fontSize:9,color:C.td}}>OH Units</div></div>
-        <div><div style={{fontSize:14,fontWeight:600,color:(s.t||{}).wos>30?C.r:(s.t||{}).wos>15?C.y:C.g}}>{(s.t||{}).wos<100?(s.t||{}).wo(s||{}).toFixed(1):"99+"}</div><div style={{fontSize:9,color:C.td}}>WOS</div></div>
+        <div><div style={{fontSize:14,fontWeight:600,color:(s.t||{}).wos>30?C.r:(s.t||{}).wos>15?C.y:C.g}}>{((s.t||{}).wos||999)<100?((s.t||{}).wos||0).toFixed(1):"99+"}</div><div style={{fontSize:9,color:C.td}}>WOS</div></div>
       </div>}
       {!isNso&&lyT!=null&&<div style={{marginTop:8,fontSize:11,fontWeight:600,color:parseFloat(lyT)>=0?C.g:C.r,fontFamily:"'JetBrains Mono',monospace"}}>
         {parseFloat(lyT)>=0?"▲":"▼"} {Math.abs(parseFloat(lyT))}% vs LY ({metric==="sales_d"?fmtK(tfD[3]):fmt(tfD[2])})
