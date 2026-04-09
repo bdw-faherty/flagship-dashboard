@@ -204,7 +204,7 @@ function Landing({stores,stot,sa,onSelect,dataDate,data}){
       };
       const val=getVal(metric,tf);
       const lyVal=(()=>{const d=(t.tf||{})[tf]||[0,0,0,0];return metric==="sales_u"?d[2]:metric==="sales_d"?d[3]:null})();
-      return{...s,t,a:sa[s.n]||{},val,lyVal,isNso:isNSO(sa[s.n])};
+      return{...s,t,agg:sa[s.n]||{},val,lyVal,isNso:isNSO(sa[s.n])};
     });
 
     // Filter search
@@ -253,7 +253,7 @@ function Landing({stores,stot,sa,onSelect,dataDate,data}){
       {!isNso&&<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginTop:6}}>
         <div><div style={{fontSize:18,fontWeight:700,color:C.txt}}>{fmt(tfD[0])}</div><div style={{fontSize:9,color:C.td}}>Units {tf}</div></div>
         <div><div style={{fontSize:14,fontWeight:600,color:C.tm}}>{fmtK(tfD[1])}</div><div style={{fontSize:9,color:C.td}}>Sales $ {tf}</div></div>
-        <div><div style={{fontSize:14,fontWeight:600,color:C.tm}}>{fmt((s.a||{}).oh||0)}</div><div style={{fontSize:9,color:C.td}}>OH Units</div></div>
+        <div><div style={{fontSize:14,fontWeight:600,color:C.tm}}>{fmt((s.agg||{}).oh||0)}</div><div style={{fontSize:9,color:C.td}}>OH Units</div></div>
         <div><div style={{fontSize:14,fontWeight:600,color:(s.t||{}).wos>30?C.r:(s.t||{}).wos>15?C.y:C.g}}>{((s.t||{}).wos||999)<100?((s.t||{}).wos||0).toFixed(1):"99+"}</div><div style={{fontSize:9,color:C.td}}>WOS</div></div>
       </div>}
       {!isNso&&lyT!=null&&<div style={{marginTop:8,fontSize:11,fontWeight:600,color:parseFloat(lyT)>=0?C.g:C.r,fontFamily:"'JetBrains Mono',monospace"}}>
